@@ -1,0 +1,4 @@
+#!/bin/bash
+# CPU VPS 2 Connection - 4 CPU, 16GB RAM
+# Usage: cpu2
+ssh -F /dev/null root@84.32.131.190
