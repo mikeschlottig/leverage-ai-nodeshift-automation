@@ -1,0 +1,105 @@
+{
+  "task_name": "nodeshift_gpu_setup",
+  "description": "Automatically set up NodeShift GPU cluster with AI frameworks",
+  "steps": [
+    {
+      "action": "ssh_connect",
+      "target": "gpu_cluster",
+      "ip": "47.224.117.240",
+      "port": "6489"
+    },
+    {
+      "action": "system_update",
+      "commands": [
+        "apt update",
+        "apt upgrade -y",
+        "apt install -y software-properties-common curl wget git vim htop"
+      ]
+    },
+    {
+      "action": "install_docker",
+      "commands": [
+        "curl -fsSL https://get.docker.com -o get-docker.sh",
+        "sh get-docker.sh",
+        "usermod -aG docker root",
+        "systemctl enable docker",
+        "systemctl start docker"
+      ]
+    },
+    {
+      "action": "install_nvidia_docker",
+      "commands": [
+        "distribution=$(. /etc/os-release;echo $ID$VERSION_ID)",
+        "curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg",
+        "curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | tee /etc/apt/sources.list.d/nvidia-container-toolkit.list",
+        "apt update",
+        "apt install -y nvidia-container-toolkit",
+        "nvidia-ctk runtime configure --runtime=docker",
+        "systemctl restart docker"
+      ]
+    },
+    {
+      "action": "verify_gpu",
+      "commands": [
+        "nvidia-smi",
+        "docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu20.04 nvidia-smi"
+      ]
+    },
+    {
+      "action": "install_python_deps",
+      "commands": [
+        "apt install -y python3 python3-pip python3-venv",
+        "pip3 install --upgrade pip setuptools wheel"
+      ]
+    },
+    {
+      "action": "install_pytorch",
+      "commands": [
+        "pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118",
+        "pip3 install transformers accelerate bitsandbytes datasets evaluate",
+        "pip3 install numpy pandas matplotlib seaborn jupyter"
+      ]
+    },
+    {
+      "action": "install_ollama",
+      "commands": [
+        "curl -fsSL https://ollama.ai/install.sh | sh",
+        "systemctl enable ollama",
+        "systemctl start ollama",
+        "sleep 10",
+        "ollama pull llama3.2:3b",
+        "ollama pull codellama:7b"
+      ]
+    },
+    {
+      "action": "install_agent_frameworks",
+      "commands": [
+        "cd /opt",
+        "git clone https://github.com/frdel/agent-zero.git",
+        "git clone https://github.com/AIForgeLabs/agent-weaver.git",
+        "cd agent-zero && pip3 install -r requirements.txt",
+        "cd ../agent-weaver && pip3 install -r requirements.txt"
+      ]
+    },
+    {
+      "action": "setup_workspace",
+      "commands": [
+        "mkdir -p /workspace/projects",
+        "mkdir -p /workspace/models",
+        "mkdir -p /workspace/data",
+        "chmod -R 755 /workspace"
+      ]
+    },
+    {
+      "action": "test_installation",
+      "commands": [
+        "nvidia-smi",
+        "docker --version",
+        "python3 -c 'import torch; print(f\"PyTorch: {torch.__version__}\"); print(f\"CUDA available: {torch.cuda.is_available()}\"); print(f\"GPU count: {torch.cuda.device_count()})\"'",
+        "ollama list",
+        "systemctl status docker --no-pager",
+        "systemctl status ollama --no-pager"
+      ]
+    }
+  ]
+}
