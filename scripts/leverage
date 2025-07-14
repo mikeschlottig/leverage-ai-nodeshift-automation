@@ -1,0 +1,92 @@
+#!/bin/bash
+# LEVERAGE AI Master Control - One command to rule them all
+
+case "$1" in
+    "gpu")
+        echo "🎯 Connecting to GPU cluster..."
+        python3 ~/agent-zero/scripts/ssh_manager.py connect 47.224.117.240 6489
+        ;;
+    "setup-gpu")
+        echo "⚙️ Setting up GPU cluster with AI frameworks..."
+        python3 ~/agent-zero/scripts/run_agent_zero.py ~/agent-zero/configs/nodeshift_setup.json
+        ;;
+    "agent")
+        echo "🤖 Starting Agent Zero..."
+        docker run -d -p 50001:50001 -v ~/agent-zero:/workspace frdel/agent-zero-run
+        echo "Agent Zero running at: http://localhost:50001"
+        ;;
+    "ssh-setup")
+        echo "🔑 Setting up SSH keys..."
+        python3 ~/agent-zero/scripts/ssh_manager.py generate
+        echo ""
+        echo "📋 ADD THIS PUBLIC KEY TO NODESHIFT DASHBOARD:"
+        echo "=============================================="
+        python3 ~/agent-zero/scripts/ssh_manager.py pubkey
+        echo "=============================================="
+        echo ""
+        echo "1. Go to your NodeShift dashboard"
+        echo "2. Find your GPU instance"
+        echo "3. Click 'SSH Keys' or 'Add SSH Key'"
+        echo "4. Paste the key above"
+        echo "5. Save it"
+        echo "6. Run: leverage gpu"
+        ;;
+    "test")
+        echo "🧪 Testing connections..."
+        echo "GPU Cluster:"
+        python3 ~/agent-zero/scripts/ssh_manager.py test 47.224.117.240 6489
+        echo ""
+        echo "CPU VPS 1:"
+        timeout 10 ssh -o ConnectTimeout=5 -o BatchMode=yes root@45.138.27.27 'echo "Connection successful"' 2>/dev/null && echo "✅ CPU VPS 1 reachable" || echo "❌ CPU VPS 1 unreachable"
+        echo ""
+        echo "CPU VPS 2:"
+        timeout 10 ssh -o ConnectTimeout=5 -o BatchMode=yes root@84.32.131.190 'echo "Connection successful"' 2>/dev/null && echo "✅ CPU VPS 2 reachable" || echo "❌ CPU VPS 2 unreachable"
+        ;;
+    "status")
+        echo "📊 LEVERAGE AI Infrastructure Status"
+        echo "=================================="
+        echo "🔥 GPU Cluster: 4x RTX 3060 (47.224.117.240:6489)"
+        echo "💻 CPU VPS 1: 1 CPU, 1.9GB RAM (45.138.27.27)"
+        echo "🖥️  CPU VPS 2: 4 CPU, 16GB RAM (84.32.131.190)"
+        echo ""
+        echo "🤖 Agent Zero: $(docker ps --filter "ancestor=frdel/agent-zero-run" --format "table {{.Status}}" | tail -n +2 || echo "Not running")"
+        echo ""
+        echo "🔗 Connection Tests:"
+        leverage test
+        ;;
+    "kill")
+        echo "💀 Stopping Agent Zero..."
+        docker stop $(docker ps -q --filter "ancestor=frdel/agent-zero-run") 2>/dev/null || echo "Agent Zero was not running"
+        docker rm $(docker ps -aq --filter "ancestor=frdel/agent-zero-run") 2>/dev/null || echo "No containers to remove"
+        echo "✅ Agent Zero stopped"
+        ;;
+    "update")
+        echo "🔄 Updating automation suite..."
+        curl -fsSL https://raw.githubusercontent.com/mikeschlottig/leverage-ai-nodeshift-automation/main/setup.sh | bash
+        echo "✅ Update complete"
+        ;;
+    *)
+        echo "🚀 LEVERAGE AI Master Control"
+        echo "=========================="
+        echo "Usage: leverage <command>"
+        echo ""
+        echo "🔥 Core Commands:"
+        echo "  gpu         - Connect to GPU cluster (2 words)"
+        echo "  agent       - Start Agent Zero interface (2 words)"
+        echo "  ssh-setup   - Generate SSH keys for NodeShift"
+        echo "  setup-gpu   - Auto-setup GPU with AI frameworks"
+        echo ""
+        echo "📊 Management:"
+        echo "  status      - Show infrastructure status"
+        echo "  test        - Test all connections"
+        echo "  kill        - Stop Agent Zero"
+        echo "  update      - Update automation suite"
+        echo ""
+        echo "💀 Examples (NO MORE SSH HELL):"
+        echo "  leverage gpu          # Connect to 4x RTX 3060"
+        echo "  leverage agent        # Start Agent Zero UI"
+        echo "  leverage setup-gpu    # Full GPU automation"
+        echo ""
+        echo "Made with 💀 by LEVERAGE AI"
+        ;;
+esac
