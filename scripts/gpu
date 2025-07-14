@@ -1,0 +1,4 @@
+#!/bin/bash
+# GPU Cluster Connection - 4x RTX 3060
+# Usage: gpu
+python3 ~/agent-zero/scripts/ssh_manager.py connect 47.224.117.240 6489
