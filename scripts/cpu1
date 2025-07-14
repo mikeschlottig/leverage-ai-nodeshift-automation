@@ -1,0 +1,4 @@
+#!/bin/bash
+# CPU VPS 1 Connection - 1 CPU, 1.9GB RAM
+# Usage: cpu1
+ssh -F /dev/null root@45.138.27.27
